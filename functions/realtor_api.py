@@ -23,22 +23,30 @@ def get_property_details(address: str) -> Dict:
     url = f"{RAPIDAPI_BASE_URL}/properties/v3/list"
 
     headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": RAPIDAPI_HOST
+        "Content-Type": "application/json",
+        "X-RapidAPI-Host": RAPIDAPI_HOST,
+        "X-RapidAPI-Key": RAPIDAPI_KEY
     }
 
-    # Parse address for search
-    querystring = {
-        "limit": "1",
-        "offset": "0",
-        "postal_code": "",
-        "status": "for_sale",
-        "sort": "relevance",
-        "location": address
+    # Parse address - extract city if possible
+    payload = {
+        "limit": 1,
+        "offset": 0,
+        "status": ["for_sale", "ready_to_build"],
+        "sort": {"direction": "desc", "field": "list_date"}
     }
+
+    # Try to extract postal code from address
+    parts = address.split(',')
+    if len(parts) >= 2:
+        city = parts[-2].strip()
+        state = parts[-1].strip().split()[0] if len(parts) > 2 else ""
+        payload["city"] = city
+        if state:
+            payload["state_code"] = state
 
     try:
-        response = requests.get(url, headers=headers, params=querystring)
+        response = requests.post(url, headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()
 
@@ -80,23 +88,23 @@ def get_comparable_properties(city: str, state: str, max_price: int, min_price: 
     url = f"{RAPIDAPI_BASE_URL}/properties/v3/list"
 
     headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": RAPIDAPI_HOST
+        "Content-Type": "application/json",
+        "X-RapidAPI-Host": RAPIDAPI_HOST,
+        "X-RapidAPI-Key": RAPIDAPI_KEY
     }
 
-    querystring = {
-        "limit": str(limit),
-        "offset": "0",
+    payload = {
+        "limit": limit,
+        "offset": 0,
         "city": city,
         "state_code": state,
-        "status": "for_sale,sold",
-        "sort": "relevance",
-        "price_max": str(max_price),
-        "price_min": str(min_price)
+        "status": ["for_sale", "sold"],
+        "sort": {"direction": "desc", "field": "list_date"},
+        "list_price": {"min": min_price, "max": max_price}
     }
 
     try:
-        response = requests.get(url, headers=headers, params=querystring)
+        response = requests.post(url, headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()
 
