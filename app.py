@@ -58,6 +58,12 @@ def index():
     return send_from_directory('frontend', 'index.html')
 
 
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files (CSS, JS)"""
+    return send_from_directory('frontend', path)
+
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_property():
     """
