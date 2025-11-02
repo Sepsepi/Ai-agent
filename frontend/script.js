@@ -42,8 +42,8 @@ async function sendMessage() {
     setLoading(true);
 
     try {
-        // Call API
-        const response = await fetch('http://localhost:5000/api/analyze', {
+        // Call API - use relative URL so it works on any deployment
+        const response = await fetch('/api/analyze', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
