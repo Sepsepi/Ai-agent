@@ -3,54 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate Deal Analyzer - AI Agent</title>
+    <title>Deal Analyzer</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
-            <div class="header-content">
-                <h1>🏠 Real Estate Deal Analyzer</h1>
-                <p>AI-Powered Property Investment Analysis</p>
-            </div>
+            <h1>Deal Analyzer</h1>
         </header>
 
-        <!-- Chat Container -->
         <div class="chat-container" id="chatContainer">
-            <!-- Welcome Message -->
-            <div class="message bot-message">
+            <div class="message assistant">
                 <div class="message-content">
-                    <strong>👋 Welcome!</strong><br><br>
-                    I'm your AI real estate investment analyst powered by DeepSeek AI and live market data from Realtor.com.<br><br>
-                    <strong>Try asking:</strong><br>
-                    • "Analyze 123 Main St, Austin, TX"<br>
-                    • "What's the investment potential for properties in Miami under $300k?"<br>
-                    • "Should I invest in fix-and-flip deals?"<br><br>
-                    Enter any property address to get started!
+                    Enter a property address to analyze investment potential.
                 </div>
             </div>
         </div>
 
-        <!-- Input Area -->
         <div class="input-container">
             <div class="input-wrapper">
                 <textarea
                     id="userInput"
-                    placeholder="Enter property address or ask a question..."
+                    placeholder="Enter address (e.g., Austin, TX)"
                     rows="1"
                 ></textarea>
                 <button id="sendBtn" onclick="sendMessage()">
-                    <span id="btnText">Send</span>
+                    <span id="btnText">→</span>
                     <span id="btnLoader" class="loader" style="display: none;"></span>
-                </button>
-            </div>
-            <div class="quick-actions">
-                <button class="quick-btn" onclick="setMessage('Analyze properties under $250k in Dallas, TX')">
-                    🏘️ Find Deals in Dallas
-                </button>
-                <button class="quick-btn" onclick="setMessage('What makes a good fix-and-flip deal?')">
-                    💡 Learn About Investing
                 </button>
             </div>
         </div>

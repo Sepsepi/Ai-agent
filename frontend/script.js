@@ -59,15 +59,15 @@ async function sendMessage() {
             displayPropertyAnalysis(data);
         } else if (data.type === 'conversation' || data.type === 'chat') {
             // General conversation
-            addMessage(data.message, 'bot');
+            addMessage(data.message, 'assistant');
         } else if (data.type === 'error') {
             // Error message
-            addMessage(`❌ ${data.message}`, 'bot');
+            addMessage(`Error: ${data.message}`, 'assistant');
         }
 
     } catch (error) {
         console.error('Error:', error);
-        addMessage(`❌ Error: ${error.message}. Make sure the server is running on http://localhost:5000`, 'bot');
+        addMessage(`Error: ${error.message}. Make sure the server is running.`, 'assistant');
     } finally {
         setLoading(false);
     }
@@ -76,7 +76,7 @@ async function sendMessage() {
 // Add message to chat
 function addMessage(text, sender) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}-message`;
+    messageDiv.className = `message ${sender}`;
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
@@ -127,7 +127,7 @@ function displayPropertyAnalysis(data) {
 
             <hr style="margin: 15px 0; border: none; border-top: 1px solid #e2e8f0;">
 
-            <h3 style="color: #764ba2; margin-top: 15px;">📊 Investment Analysis</h3>
+            <h3 style="color: #e7e9ea; margin-top: 15px;">Investment Metrics</h3>
 
             <div class="property-details">
                 <div class="detail-item">
@@ -163,14 +163,14 @@ function displayPropertyAnalysis(data) {
             </div>
 
             <div class="analysis-section">
-                <strong style="color: #667eea; font-size: 16px;">🤖 AI Analysis & Assumptions:</strong><br><br>${ai_analysis}
+                <strong style="color: #e7e9ea; font-size: 15px;">Analysis:</strong><br><br>${ai_analysis}
             </div>
         </div>
     `;
 
     // Add to chat
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'message bot-message';
+    messageDiv.className = 'message assistant';
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
