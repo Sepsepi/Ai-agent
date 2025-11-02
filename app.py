@@ -183,11 +183,13 @@ Format your response in a clear, professional manner."""
         })
 
     except Exception as e:
+        import traceback
         print(f"Error: {str(e)}")
+        print(traceback.format_exc())
         return jsonify({
             "type": "error",
-            "message": f"An error occurred: {str(e)}"
-        }), 500
+            "message": f"Server error: {str(e)}"
+        }), 200  # Return 200 so frontend gets JSON
 
 
 @app.route('/api/chat', methods=['POST'])
