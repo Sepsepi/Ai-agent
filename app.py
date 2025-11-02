@@ -41,13 +41,16 @@ def call_deepseek(messages, stream=False):
         response = requests.post(
             f"{DEEPSEEK_API_BASE}/chat/completions",
             headers=headers,
-            json=payload
+            json=payload,
+            timeout=25  # 25 second timeout to avoid worker timeout
         )
         response.raise_for_status()
 
         result = response.json()
         return result['choices'][0]['message']['content']
 
+    except requests.Timeout:
+        return "DeepSeek API timeout - please try again"
     except Exception as e:
         return f"Error calling DeepSeek API: {str(e)}"
 
