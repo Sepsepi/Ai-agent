@@ -42,7 +42,7 @@ def call_deepseek(messages, stream=False):
             f"{DEEPSEEK_API_BASE}/chat/completions",
             headers=headers,
             json=payload,
-            timeout=25  # 25 second timeout to avoid worker timeout
+            timeout=15  # 15 second timeout
         )
         response.raise_for_status()
 
@@ -80,21 +80,12 @@ def analyze_property():
         return jsonify({"error": "No message provided"}), 400
 
     try:
-        # Step 1: Use DeepSeek to extract address from user message
-        extract_prompt = [
-            {
-                "role": "system",
-                "content": "You are a helpful assistant that extracts property addresses from user messages. Extract ONLY the address in the format: Street, City, State. If no clear address is found, respond with 'NO_ADDRESS_FOUND'."
-            },
-            {
-                "role": "user",
-                "content": user_message
-            }
-        ]
+        # Step 1: Extract city/state from user message (simple string parsing, no AI needed)
+        # Just use the message directly - the API will search by city
+        address = user_message.strip()
 
-        address = call_deepseek(extract_prompt).strip()
-
-        if "NO_ADDRESS_FOUND" in address:
+        # If message is too vague, ask for clarification
+        if len(address) < 3:
             # No specific address, just have a conversation
             general_response = call_deepseek([
                 {
@@ -132,44 +123,22 @@ def analyze_property():
         # Step 5: Perform deal analysis
         deal_analysis = analyze_deal(property_info, repair_costs=repair_estimate['estimated_total'])
 
-        # Step 6: Use DeepSeek to generate detailed analysis with assumptions
+        # Step 6: Use DeepSeek to generate brief analysis (shortened prompt for speed)
         analysis_prompt = [
             {
                 "role": "system",
-                "content": """You are an expert real estate investment analyst.
-
-Your job is to analyze property data and provide detailed insights including:
-1. Property overview with key details
-2. Investment analysis (ARV, repair costs, ROI, profit potential)
-3. Market assumptions and reasoning
-4. Potential risks and opportunities
-5. Clear recommendation (BUY/PASS/NEGOTIATE)
-
-Be specific, use actual numbers, and explain your reasoning. Make reasonable assumptions about market conditions and mention them clearly."""
+                "content": "You are a real estate analyst. Analyze the property data and provide: deal summary, market assumptions, risks, and recommendation (BUY/PASS/NEGOTIATE). Be concise."
             },
             {
                 "role": "user",
-                "content": f"""Analyze this property investment opportunity:
+                "content": f"""Property: {property_info.get('address')}
+Price: ${property_info.get('price'):,}
+ARV: ${deal_analysis.get('arv'):,}
+Repairs: ${deal_analysis.get('estimated_repairs'):,}
+ROI: {deal_analysis.get('roi_percentage')}%
+Rating: {deal_analysis.get('deal_rating')}
 
-USER QUERY: {user_message}
-
-PROPERTY DATA:
-{json.dumps(property_info, indent=2)}
-
-CALCULATED METRICS:
-{json.dumps(deal_analysis, indent=2)}
-
-REPAIR ESTIMATE:
-{json.dumps(repair_estimate, indent=2)}
-
-Please provide a comprehensive analysis with:
-1. Property summary
-2. Investment metrics breakdown
-3. Your assumptions (market trends, neighborhood, buyer demand, etc.)
-4. Risk factors
-5. Final recommendation
-
-Format your response in a clear, professional manner."""
+Analyze this deal briefly."""
             }
         ]
 
