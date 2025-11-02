@@ -5,12 +5,20 @@ Configuration file for Deal Analyzer Agent
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env only if it exists (local development)
+if os.path.exists('.env'):
+    load_dotenv()
 
 # API Keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+
+# Debug: Check if keys are loaded
+if not RAPIDAPI_KEY:
+    print("⚠️  WARNING: RAPIDAPI_KEY not found!")
+if not DEEPSEEK_API_KEY:
+    print("⚠️  WARNING: DEEPSEEK_API_KEY not found!")
 
 # RapidAPI Realtor Config
 RAPIDAPI_HOST = "realty-in-us.p.rapidapi.com"
