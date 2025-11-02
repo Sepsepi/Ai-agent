@@ -55,8 +55,23 @@ async function sendMessage() {
 
         // Handle different response types
         if (data.type === 'analysis') {
-            // Full property analysis
-            displayPropertyAnalysis(data);
+            // Check if multiple properties
+            if (data.properties && data.properties.length > 0) {
+                // Multiple properties
+                addMessage(`Found ${data.count} properties:`, 'assistant');
+                data.properties.forEach((prop, index) => {
+                    displayPropertyAnalysis({
+                        property_data: prop.property_data,
+                        deal_analysis: prop.deal_analysis,
+                        repair_estimate: prop.repair_estimate,
+                        ai_analysis: prop.ai_analysis,
+                        address: prop.property_data.address
+                    });
+                });
+            } else {
+                // Single property (old format)
+                displayPropertyAnalysis(data);
+            }
         } else if (data.type === 'conversation' || data.type === 'chat') {
             // General conversation
             addMessage(data.message, 'assistant');

@@ -80,78 +80,89 @@ def analyze_property():
         return jsonify({"error": "No message provided"}), 400
 
     try:
-        # Step 1: Extract city/state from user message (simple string parsing, no AI needed)
-        # Just use the message directly - the API will search by city
-        address = user_message.strip()
-
-        # If message is too vague, ask for clarification
-        if len(address) < 3:
-            # No specific address, just have a conversation
-            general_response = call_deepseek([
-                {
-                    "role": "system",
-                    "content": "You are a real estate investment expert assistant. Help users with general real estate questions."
-                },
-                {
-                    "role": "user",
-                    "content": user_message
-                }
-            ])
-
-            return jsonify({
-                "type": "conversation",
-                "message": general_response
-            })
-
-        # Step 2: Fetch property data from Realtor API
-        print(f"Fetching property data for: {address}")
-        property_result = get_property_details(address)
-
-        if not property_result.get('success'):
-            return jsonify({
-                "type": "error",
-                "message": f"Could not find property at '{address}'. Please provide a valid address."
-            })
-
-        # Step 3: Extract and format property info
-        raw_property = property_result['property']
-        property_info = extract_property_info(raw_property)
-
-        # Step 4: Calculate repair estimates
-        repair_estimate = estimate_repair_costs(property_info)
-
-        # Step 5: Perform deal analysis
-        deal_analysis = analyze_deal(property_info, repair_costs=repair_estimate['estimated_total'])
-
-        # Step 6: Use DeepSeek to generate brief analysis (shortened prompt for speed)
-        analysis_prompt = [
+        # Step 1: Use DeepSeek to parse the request
+        parse_prompt = [
             {
                 "role": "system",
-                "content": "You are a real estate analyst. Analyze the property data and provide: deal summary, market assumptions, risks, and recommendation (BUY/PASS/NEGOTIATE). Be concise."
+                "content": "Extract: city, state, max_price, count. Reply ONLY in JSON format: {\"city\":\"Austin\",\"state\":\"TX\",\"max_price\":500000,\"count\":3}. If no address found, reply: {\"error\":\"no_location\"}"
             },
             {
                 "role": "user",
-                "content": f"""Property: {property_info.get('address')}
-Price: ${property_info.get('price'):,}
-ARV: ${deal_analysis.get('arv'):,}
-Repairs: ${deal_analysis.get('estimated_repairs'):,}
-ROI: {deal_analysis.get('roi_percentage')}%
-Rating: {deal_analysis.get('deal_rating')}
-
-Analyze this deal briefly."""
+                "content": user_message
             }
         ]
 
-        ai_analysis = call_deepseek(analysis_prompt)
+        parsed = call_deepseek(parse_prompt).strip()
 
-        # Step 7: Return comprehensive response
+        # Try to parse JSON response
+        try:
+            query_params = json.loads(parsed)
+        except:
+            # If JSON parsing fails, return error
+            return jsonify({
+                "type": "error",
+                "message": "Please specify a city and state (e.g., 'Austin, TX' or 'properties in Dallas, TX under 300k')"
+            })
+
+        if query_params.get("error"):
+            return jsonify({
+                "type": "error",
+                "message": "Please specify a city and state (e.g., 'Austin, TX' or '3 deals in Miami, FL under 500k')"
+            })
+
+        # Step 2: Fetch properties from Realtor API
+        city = query_params.get("city", "")
+        state = query_params.get("state", "")
+        max_price = query_params.get("max_price", 1000000)
+        count = min(query_params.get("count", 1), 3)  # Max 3 properties
+
+        print(f"Fetching {count} properties in {city}, {state} under ${max_price}")
+
+        from functions.realtor_api import get_comparable_properties
+        comps_result = get_comparable_properties(city, state, max_price, limit=count)
+
+        if not comps_result.get('success'):
+            return jsonify({
+                "type": "error",
+                "message": f"Could not find properties in {city}, {state}"
+            })
+
+        # Step 3: Analyze each property
+        properties = comps_result['comparables']
+        results = []
+
+        for raw_property in properties:
+            property_info = extract_property_info(raw_property)
+            repair_estimate = estimate_repair_costs(property_info)
+            deal_analysis = analyze_deal(property_info, repair_costs=repair_estimate['estimated_total'])
+
+            # Quick AI analysis for each
+            analysis_prompt = [
+                {
+                    "role": "system",
+                    "content": "Brief analysis: deal summary, key risks, recommendation. 3 sentences max."
+                },
+                {
+                    "role": "user",
+                    "content": f"${property_info.get('price'):,} | ARV: ${deal_analysis.get('arv'):,} | Repairs: ${deal_analysis.get('estimated_repairs'):,} | ROI: {deal_analysis.get('roi_percentage')}% | Rating: {deal_analysis.get('deal_rating')}"
+                }
+            ]
+
+            ai_analysis = call_deepseek(analysis_prompt)
+
+            results.append({
+                "property_data": property_info,
+                "deal_analysis": deal_analysis,
+                "repair_estimate": repair_estimate,
+                "ai_analysis": ai_analysis
+            })
+
+        # Return all results
         return jsonify({
             "type": "analysis",
-            "property_data": property_info,
-            "deal_analysis": deal_analysis,
-            "repair_estimate": repair_estimate,
-            "ai_analysis": ai_analysis,
-            "address": address
+            "properties": results,
+            "count": len(results),
+            "query": f"{count} properties in {city}, {state} under ${max_price:,}"
         })
 
     except Exception as e:
